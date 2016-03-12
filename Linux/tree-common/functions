@@ -190,7 +190,7 @@ get_any() {
 insmod_ko() {
     mod_path=$1
     log_begin_msg "Loading ${mod_path} kernel module"
-    run wget -q -O mod.ko http://169.254.42.24/kernel/$(uname -r)/kernel/${mod_path}
+    run wget -q -O mod.ko http://169.254.42.24/kernel/$(uname -m)/$(uname -r)/modules/$(uname -r)/kernel/${mod_path}
     run insmod $(pwd)/mod.ko
     if [ $? -eq 0 ]; then
         log_success_msg "successfully loaded"
