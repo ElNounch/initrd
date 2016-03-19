@@ -200,7 +200,6 @@ fi
 boot=$(get_any boot "${default_boot}")
 rootmnt=$(get_any rootmnt "/newroot")
 
-
 # Import boot-type functions
 case "${boot}" in
     rescue)
@@ -270,6 +269,19 @@ if [[ "$?" -eq 0 || "$(get_any RESET_PASSWORD)" == "1" || -f "${rootmnt}/.scw-re
     #if [ "$(get_opt NO_METADATA)" != "1" ]; then
     #    scw-update-server-state -u "root_password=$PASSWORD"
     #fi
+fi
+
+
+# Mount Scaleway's mirror
+if [ "$(get_any SKIP_SCW_MIRROR_MOUNT)" != "1" ]; then
+    log_begin_msg "Mounting Scaleway's mirror..."
+	CEPH_IP=${CEPH_IP:-"$( dns_resolv ceph-scw-priv1.elnounch.net. ),$( dns_resolv ceph-scw-priv2.elnounch.net. ),$( dns_resolv ceph-scw-priv3.elnounch.net. )"}
+	CEPH_USER=${CEPH_USER:-"guest"}
+	CEPH_SECRET=${CEPH_SECRET:-"AQAmqepWkcjtLhAAu5oKHicEdfSPG2jnvCUwmg=="}
+    [ -d ${rootmnt}/media/scaleway-mirror ] || run mkdir -p ${rootmnt}/media/scaleway-mirror
+	load_ceph_ko
+    emount -t ceph -o "ro,name=${CEPH_USER},secret=${CEPH_SECRET},noacl,nodev,nosuid" ${CEPH_IP}:/ ${rootmnt}/media/scaleway-mirror
+    log_end_msg
 fi
 
 
@@ -344,7 +356,6 @@ emount -o move /dev ${rootmnt}/dev
 log_begin_msg "Moving initramfs backup to /run/initramfs for shutdown"
 run mv /initramfs ${rootmnt}/run/initramfs
 log_end_msg
-
 
 # Check if $init exists and is executable
 if [[ ! -x "${rootmnt}/${init}" ]] ; then

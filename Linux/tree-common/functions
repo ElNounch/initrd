@@ -130,6 +130,9 @@ resolve_hostnames() {
     sed "s/metadata.local/${METADATA_IP}/g"
 }
 
+dns_resolv() {
+    ping -c1 $1 | sed -n -E -e 's/^PING .*\(([0-9]*(\.[0-9.]*){3})\).*$/\1/p; q'
+}
 
 # Function for parsing command line options with "=" in them
 get_opt() {
@@ -190,7 +193,7 @@ get_any() {
 insmod_ko() {
     mod_path=$1
     log_begin_msg "Loading ${mod_path} kernel module"
-    run wget -q -O mod.ko http://169.254.42.24/kernel/$(uname -r)/kernel/${mod_path}
+    run wget -q -O mod.ko http://169.254.42.24/kernel/$(uname -m)/$(uname -r)/modules/$(uname -r)/kernel/${mod_path}
     run insmod $(pwd)/mod.ko
     if [ $? -eq 0 ]; then
         log_success_msg "successfully loaded"
@@ -210,6 +213,14 @@ load_btrfs_ko() {
     insmod_ko lib/raid6/raid6_pq.ko
     insmod_ko lib/zlib_deflate/zlib_deflate.ko
     insmod_ko fs/btrfs/btrfs.ko
+}
+
+load_ceph_ko() {
+    [ -d /sys/module/cbc/ ] || insmod_ko crypto/cbc.ko
+    [ -d /sys/module/libcrc32c/ ] || insmod_ko lib/libcrc32c.ko
+    [ -d /sys/module/libceph/ ] || insmod_ko net/ceph/libceph.ko
+    [ -d /sys/module/fscache/ ] || insmod_ko fs/fscache/fscache.ko
+    [ -d /sys/module/ceph/ ] || insmod_ko fs/ceph/ceph.ko
 }
 
 setup_gpios() {
